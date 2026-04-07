@@ -30,8 +30,12 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Deploy (Vercel)
 
 1. Push the repo and import the project in [Vercel](https://vercel.com).  
-2. Set the same environment variables in **Project → Settings → Environment Variables**.  
-3. Deploy — `npm run build` should pass (`next build`).
+2. **Root Directory** must be the repository root (where `package.json` lives). If the project lives in a subfolder, set that folder under **Project → Settings → General → Root Directory**.  
+3. **Node.js**: use **20.x** (see `.nvmrc`) or any version matching `package.json` → `engines`.  
+4. Add env vars under **Project → Settings → Environment Variables** (same names as `.env.example`). The app builds without them, but the leads API needs Supabase keys in production.  
+5. Redeploy after changing settings.
+
+If the build still fails, open the failed deployment in Vercel → **Building** and copy the **error lines** (often `Module not found`, ESLint, or TypeScript). Local check: `rm -rf node_modules && npm ci && npm run build`.
 
 ## Routes
 
