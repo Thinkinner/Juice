@@ -1,0 +1,257 @@
+// IG Brain — PostgreSQL (Supabase) + Prisma
+// Auth users live in Supabase Auth; `User.id` MUST match `auth.users.id`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Platform {
+  INSTAGRAM
+  TIKTOK
+  FACEBOOK
+  X
+  YOUTUBE
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  CAROUSEL_ALBUM
+  REELS
+}
+
+enum ClassifierSource {
+  AI
+  RULES
+}
+
+enum SyncStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+model User {
+  id        String   @id @db.Uuid
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships   WorkspaceMember[]
+  ownedWorkspaces Workspace[]     @relation("WorkspaceOwner")
+}
+
+model Workspace {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  ownerId   String   @db.Uuid
+  owner     User     @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members          WorkspaceMember[]
+  socialAccounts   SocialAccount[]
+  settings         WorkspaceSettings?
+  recommendationRuns RecommendationRun[]
+  contentPatterns  ContentPattern[]
+  aiSummaries      AiSummary[]
+}
+
+model WorkspaceMember {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  userId      String   @db.Uuid
+  role        String   @default("member")
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+/// Default metric weights: views 40%, share/save quality 20%, comments 15%, ER 15%, recency 10%
+model WorkspaceSettings {
+  workspaceId         String  @id @db.Uuid
+  mockMode            Boolean @default(true)
+  aiClassifierEnabled Boolean @default(true)
+  /// { "views": 0.4, "shareSave": 0.2, "comments": 0.15, "engagementRate": 0.15, "recency": 0.1 }
+  metricWeights       Json
+  timezone            String  @default("America/New_York")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+/// OAuth / long-lived tokens — NEVER expose to client; decrypt in production.
+model SocialAccount {
+  id                   String    @id @default(uuid()) @db.Uuid
+  workspaceId          String    @db.Uuid
+  platform             Platform
+  externalUserId       String
+  username             String
+  displayName          String?
+  profileImageUrl      String?
+  accessTokenEncrypted String?   @db.Text
+  tokenExpiresAt       DateTime?
+  refreshTokenEncrypted String? @db.Text
+  connectedAt          DateTime @default(now())
+  lastSyncedAt         DateTime?
+  isMock               Boolean   @default(false)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  mediaPosts MediaPost[]
+  syncLogs   SyncLog[]
+
+  @@unique([workspaceId, platform, externalUserId])
+  @@index([workspaceId])
+}
+
+model MediaPost {
+  id               String    @id @default(uuid()) @db.Uuid
+  socialAccountId  String    @db.Uuid
+  externalMediaId  String
+  caption          String    @db.Text
+  mediaType        MediaType
+  permalink        String
+  mediaUrl         String?
+  thumbnailUrl     String?
+  publishedAt      DateTime
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  socialAccount    SocialAccount      @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  insights         MediaInsight[]
+  classification   PostClassification?
+
+  @@unique([socialAccountId, externalMediaId])
+  @@index([socialAccountId, publishedAt])
+}
+
+/// Time-series snapshots for performance history
+model MediaInsight {
+  id          String   @id @default(uuid()) @db.Uuid
+  mediaPostId String   @db.Uuid
+  snapshotAt DateTime @default(now())
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  shares      Int      @default(0)
+  saves       Int      @default(0)
+  reach       Int      @default(0)
+  impressions Int      @default(0)
+  views       Int      @default(0)
+  /// follows attributed if available later
+  follows     Int      @default(0)
+  rawPayload  Json?
+
+  mediaPost MediaPost @relation(fields: [mediaPostId], references: [id], onDelete: Cascade)
+
+  @@index([mediaPostId, snapshotAt])
+}
+
+model PostClassification {
+  id              String           @id @default(uuid()) @db.Uuid
+  mediaPostId     String           @unique @db.Uuid
+  topic           String
+  subtopic        String?
+  format          String
+  tone            String
+  emotion         String
+  hookType        String
+  ctaType         String
+  visualStyle     String
+  contentPillar   String
+  lengthBucket    String
+  /// tags: educational, meme, outrage, curiosity, etc.
+  tags            Json
+  hasFaceLikely   Boolean          @default(false)
+  textHeavyVisual Boolean          @default(false)
+  source          ClassifierSource @default(RULES)
+  modelVersion    String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  mediaPost MediaPost @relation(fields: [mediaPostId], references: [id], onDelete: Cascade)
+}
+
+model RecommendationRun {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  runAt       DateTime @default(now())
+  params      Json?
+
+  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  recommendations Recommendation[]
+
+  @@index([workspaceId, runAt])
+}
+
+model Recommendation {
+  id                 String   @id @default(uuid()) @db.Uuid
+  runId              String   @db.Uuid
+  rank               Int
+  title              String
+  hook               String   @db.Text
+  format             String
+  cta                String
+  publishWindow      String
+  confidence         Float
+  reasoning          String   @db.Text
+  supportingPostIds  Json
+  avoidNotes         String?  @db.Text
+  createdAt          DateTime @default(now())
+
+  run RecommendationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId, rank])
+}
+
+model ContentPattern {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  patternType String
+  label       String
+  strength    Float
+  metrics     Json
+  computedAt  DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, patternType])
+}
+
+model SyncLog {
+  id              String     @id @default(uuid()) @db.Uuid
+  socialAccountId String     @db.Uuid
+  status          SyncStatus @default(PENDING)
+  message         String?    @db.Text
+  postsSynced     Int        @default(0)
+  startedAt       DateTime   @default(now())
+  finishedAt      DateTime?
+
+  socialAccount SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+
+  @@index([socialAccountId, startedAt])
+}
+
+model AiSummary {
+  id          String   @id @default(uuid()) @db.Uuid
+  workspaceId String   @db.Uuid
+  scope       String
+  content     String   @db.Text
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+}

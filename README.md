@@ -1,36 +1,139 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IG Brain
 
-## Getting Started
+Production-style **Instagram professional account** analytics app: ingest insights, classify posts, discover patterns, and generate **what to post next** recommendations. Built with **Next.js 16 (App Router)**, **TypeScript**, **Tailwind CSS 4**, **shadcn/ui**, **Supabase Auth**, **Prisma** + **PostgreSQL** (Supabase), **Recharts**, **Zod**, **React Hook Form** (where needed), **dark mode** (next-themes).
 
-First, run the development server:
+## Features
+
+- **Auth**: Email/password via Supabase Auth; Prisma `User` rows keyed by `auth.users` UUID.
+- **Workspaces**: Default workspace per user; ready for multi-account.
+- **Mock Instagram**: Connect mock account + sync + **seed 120 posts** without Meta credentials.
+- **Scoring**: Weighted composite (views, share/save quality, comments, ER, recency) — editable in Settings.
+- **Patterns**: Topics, hooks, hours, formats vs baseline.
+- **Recommendations**: Ranked list with confidence, window, reasoning, supporting post IDs.
+- **AI Strategist**: Rule-based Q&A grounded in DB metrics (optional OpenAI hook described in code).
+- **Copy pack**: Hooks, CTAs, reel script, carousel outline templated from top performers.
+- **Cron-ready**: `POST /api/cron/sync` with `Authorization: Bearer $CRON_SECRET`.
+
+## Prerequisites
+
+- Node **20+** (see `.nvmrc` if present)
+- A **Supabase** project (Auth + Postgres)
+- **npm**
+
+## Install
 
 ```bash
+npm install
+cp .env.example .env.local
+# Fill DATABASE_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+npx prisma generate
+npx prisma db push
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## First-time setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Supabase**: Enable Email auth (Authentication → Providers).
+2. **Database**: Paste `DATABASE_URL` from Supabase (SQL → connection string or pooler).
+3. **Push schema**: `npx prisma db push` (applies `prisma/schema.prisma`).
+4. **Sign up** at `/signup` (creates `User` + workspace via app).
+5. **Seed mock data** (120 posts):
 
-## Learn More
+   ```bash
+   SEED_USER_EMAIL="your@signup.email" npx prisma db seed
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+6. In the app: **Settings** → **Connect mock Instagram** → **Sync latest posts** (refreshes insight snapshots) → **What to post next** → **Regenerate recommendations**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command | Description |
+|--------|-------------|
+| `npm run dev` | Dev server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | ESLint |
+| `npx prisma db push` | Sync DB schema |
+| `npx prisma db seed` | Seed mock posts |
+| `npm run db:studio` | Prisma Studio |
 
-## Deploy on Vercel
+## Environment variables
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+See **`.env.example`**. Required for full functionality:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `DATABASE_URL` — Postgres (Supabase)
+- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — anon key
+
+Optional:
+
+- `CRON_SECRET` — protect cron route
+- `SEED_USER_EMAIL` / `SEED_EMAIL` — seed target user
+- `OPENAI_API_KEY` — future grounded LLM layer (not required)
+
+## Deploy (Vercel)
+
+1. Import repo; set **Root Directory** to project root (where `package.json` lives).
+2. Add env vars from `.env.example`.
+3. Build command: `npm run build`; Install: `npm install`.
+4. **Prisma**: run `prisma db push` from CI or locally against production DB before first deploy.
+5. Optional: Vercel Cron hitting `POST /api/cron/sync` nightly with `Authorization: Bearer CRON_SECRET`.
+
+## Live Instagram (Meta) — not wired by default
+
+- Implement `src/services/instagram/instagram.service.ts` using Instagram Graph API + long-lived tokens.
+- Store tokens only in `SocialAccount.accessTokenEncrypted` (encrypt at rest in production).
+- Map media + insights into `MediaPost` / `MediaInsight` (see `instagram.types.ts`).
+- **Never** expose tokens to the client.
+
+## Architecture notes
+
+- **Modular providers**: `Platform` enum ready for TikTok, Facebook, X, YouTube.
+- **Insights**: Multiple `MediaInsight` rows per post = time series.
+- **Security**: Server actions + API routes for mutations; tokens server-only.
+
+### Bonus (comments in codebase)
+
+- Webhook ingestion for Meta subscriptions
+- TikTok adapter implementing same sync interface
+- A/B test recommendation arms
+- Viral prediction model
+- Scheduler integration (Buffer, Later, etc.)
+
+## Repository layout (high level)
+
+```
+src/
+  app/
+    (auth)/login, signup
+    (dashboard)/dashboard/*   — overview, content, patterns, next, strategist, settings
+    api/cron/sync
+  actions/                    — server actions (auth, sync, settings, recommendations, …)
+  components/
+    charts/                     — Recharts wrappers
+    dashboard/                  — sidebar, strategist, copy pack
+    ui/                         — shadcn
+  lib/
+    supabase/                   — browser + server + middleware clients
+    prisma.ts
+    constants/
+  services/
+    analytics/                  — aggregates, overview, patterns
+    scoring/                    — composite score
+    recommendation/             — ranked next-post engine
+    sync/                       — mock sync + cron path
+    classifier/                 — rules fallback
+    ai/                         — grounded strategist
+    instagram/                  — live API placeholders
+prisma/
+  schema.prisma
+  seed.ts
+supabase/
+  rls-notes.sql
+```
+
+## License
+
+Private / your project.
