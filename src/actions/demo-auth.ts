@@ -15,7 +15,16 @@ export async function enterDemoModeAction() {
     redirect("/login?error=" + encodeURIComponent("Demo login is disabled"));
   }
 
-  await ensureDemoUserInDb();
+  try {
+    await ensureDemoUserInDb();
+  } catch {
+    redirect(
+      "/login?error=" +
+        encodeURIComponent(
+          "Database unreachable. On Vercel set POSTGRES_PRISMA_URL (Supabase pooler), redeploy, then run: npx prisma db push",
+        ),
+    );
+  }
 
   const cookieStore = await cookies();
   cookieStore.set(DEMO_COOKIE_NAME, DEMO_USER_ID, {

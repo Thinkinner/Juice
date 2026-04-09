@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { ensureDemoUserInDb } from "@/lib/auth/ensure-demo-user";
 import { DEMO_USER_EMAIL, DEMO_USER_ID } from "@/lib/auth/demo-user";
 import { ensureWorkspace } from "@/services/analytics/analytics.service";
@@ -22,8 +23,17 @@ export async function getAppUserId(): Promise<string | null> {
     const cookieStore = await cookies();
     const raw = cookieStore.get(DEMO_COOKIE_NAME)?.value;
     if (raw === DEMO_USER_ID) {
-      const user = await ensureDemoUserInDb();
-      return user.id;
+      try {
+        const user = await ensureDemoUserInDb();
+        return user.id;
+      } catch {
+        redirect(
+          "/login?error=" +
+            encodeURIComponent(
+              "Database unreachable — set POSTGRES_PRISMA_URL on Vercel, redeploy, then npx prisma db push",
+            ),
+        );
+      }
     }
   }
 

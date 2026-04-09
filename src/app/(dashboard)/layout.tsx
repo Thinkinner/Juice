@@ -13,7 +13,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login");
   }
 
-  await ensureWorkspace(userId);
+  try {
+    await ensureWorkspace(userId);
+  } catch {
+    redirect(
+      "/login?error=" +
+        encodeURIComponent(
+          "Database connection failed. Add POSTGRES_PRISMA_URL in Vercel → Env, redeploy, run prisma db push against that DB.",
+        ),
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-1">
