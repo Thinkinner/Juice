@@ -1,67 +1,36 @@
-# Juice Finder
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Mobile-first **Next.js 14** (App Router) app: short wellness quiz → personalized **juice ideas** (informational only) → email capture with **Supabase** `leads` table. Not a medical product—copy avoids “cure/treat” language and shows a clear disclaimer.
+## Getting Started
 
-## Stack
-
-- Next.js 14, TypeScript, Tailwind CSS, App Router  
-- Supabase (`@supabase/supabase-js`, `@supabase/ssr` for future auth)  
-- React Hook Form + Zod (`@hookform/resolvers` **v3** with **Zod 3**)  
-- Framer Motion, Lucide React  
-
-## Quick start
+First, run the development server:
 
 ```bash
-npm install
-cp .env.example .env.local
-# Add your Supabase URL + anon key (optional for local UI; lead API logs a warning if missing)
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Supabase setup
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-1. Create a project in [Supabase](https://supabase.com).  
-2. In **SQL Editor**, run `supabase/migrations/001_initial.sql`, then `supabase/seed.sql` (recipes + juice spots).  
-3. Copy **Project URL** and **anon public** key into `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.  
-4. The `POST /api/leads` route inserts into `public.leads`. With the included RLS policy, the **anon** key is enough. Optionally set `SUPABASE_SERVICE_ROLE_KEY` for server-only inserts (keep secret; never expose to the client).
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Deploy (Vercel)
+## Learn More
 
-1. Push the repo and import the project in [Vercel](https://vercel.com).  
-2. **Root Directory** must be the repository root (where `package.json` lives). If the project lives in a subfolder, set that folder under **Project → Settings → General → Root Directory**.  
-3. **Node.js**: use **20.x** (see `.nvmrc`) or any version matching `package.json` → `engines`.  
-4. Add env vars under **Project → Settings → Environment Variables** (same names as `.env.example`). The app builds without them, but the leads API needs Supabase keys in production.  
-5. Redeploy after changing settings.
+To learn more about Next.js, take a look at the following resources:
 
-If the build still fails, open the failed deployment in Vercel → **Building** and copy the **error lines** (often `Module not found`, ESLint, or TypeScript). Local check: `rm -rf node_modules && npm ci && npm run build`.
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## Routes
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-| Path        | Purpose                                      |
-|------------|-----------------------------------------------|
-| `/`        | Landing, CTA to quiz                          |
-| `/quiz`    | Multi-step quiz + email unlock + lead save   |
-| `/results` | Recipes + mock juice spots (needs session)    |
-| `/saved`   | Saved recipe IDs (localStorage; auth-ready)   |
-| `POST /api/leads` | Persists lead to Supabase              |
+## Deploy on Vercel
 
-## Data & logic
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-- Recipe catalog: `src/data/recipes.ts` (aligned UUIDs with `supabase/seed.sql`).  
-- Mock spots + ZIP matching: `src/data/juice-spots.ts` (replace with Google Places later).  
-- Scoring: `src/lib/recommendations.ts` (goal + sensitivities + flavor).  
-- Quiz + unlocked session persistence: `localStorage` keys in `src/lib/quiz-storage.ts`.  
-- Saved recipes: `src/lib/saved-recipes.ts`.
-
-## Scripts
-
-- `npm run dev` — development  
-- `npm run build` — production build  
-- `npm run start` — run production server  
-- `npm run lint` — ESLint  
-
-## Legal / product note
-
-All juice suggestions are **informational wellness content only**, not medical advice. The UI states that the app does not diagnose, treat, or cure conditions.
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
