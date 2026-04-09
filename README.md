@@ -76,10 +76,13 @@ Optional:
 ## Deploy (Vercel)
 
 1. Import repo; set **Root Directory** to project root (where `package.json` lives).
-2. Add env vars from `.env.example`.
-3. Build command: `npm run build`; Install: `npm install`.
-4. **Prisma**: run `prisma db push` from CI or locally against production DB before first deploy.
-5. Optional: Vercel Cron hitting `POST /api/cron/sync` nightly with `Authorization: Bearer CRON_SECRET`.
+2. **Node.js**: set **20.x** (Project → Settings → General) — matches `engines` and `.nvmrc`.
+3. Add env vars from `.env.example` (at minimum `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` for a green build with dynamic routes).
+4. Build runs `prisma generate && next build` so the Prisma client always exists on the server.
+5. **Prisma**: run `npx prisma db push` against production DB before first deploy (or from CI).
+6. Optional: Vercel Cron → `POST /api/cron/sync` with `Authorization: Bearer CRON_SECRET`.
+
+If the build failed with exit code 1, check the **Build** log (not only Runtime). Common fixes: wrong Node version, missing env for Supabase public keys, or Root Directory pointing at an empty folder.
 
 ## Live Instagram (Meta) — not wired by default
 
