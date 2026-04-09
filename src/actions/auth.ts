@@ -2,7 +2,7 @@
 
 import { DEMO_COOKIE_NAME } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { createServerClientSupabase } from "@/lib/supabase/server";
+import { createServerClientSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -13,6 +13,10 @@ export async function signUpAction(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   if (!email || !password) {
     redirect("/signup?error=" + encodeURIComponent("Email and password required"));
+  }
+
+  if (!isSupabaseConfigured()) {
+    redirect("/signup?error=" + encodeURIComponent("Supabase is not configured — use Open demo on the home page."));
   }
 
   const supabase = await createServerClientSupabase();
@@ -39,6 +43,10 @@ export async function signInAction(formData: FormData) {
     redirect("/login?error=" + encodeURIComponent("Email and password required"));
   }
 
+  if (!isSupabaseConfigured()) {
+    redirect("/login?error=" + encodeURIComponent("Supabase is not configured — use Open demo instead."));
+  }
+
   const supabase = await createServerClientSupabase();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) redirect("/login?error=" + encodeURIComponent(error.message));
@@ -59,8 +67,10 @@ export async function signInAction(formData: FormData) {
 export async function signOutAction() {
   const cookieStore = await cookies();
   cookieStore.delete(DEMO_COOKIE_NAME);
-  const supabase = await createServerClientSupabase();
-  await supabase.auth.signOut();
+  if (isSupabaseConfigured()) {
+    const supabase = await createServerClientSupabase();
+    await supabase.auth.signOut();
+  }
   revalidatePath("/", "layout");
   redirect("/login");
 }

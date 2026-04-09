@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
+import { ensureDemoUserInDb } from "@/lib/auth/ensure-demo-user";
 import { DEMO_USER_EMAIL, DEMO_USER_ID } from "@/lib/auth/demo-user";
 import { ensureWorkspace } from "@/services/analytics/analytics.service";
 import { prisma } from "@/lib/prisma";
-import { createServerClientSupabase } from "@/lib/supabase/server";
+import { createServerClientSupabase, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export { DEMO_USER_EMAIL, DEMO_USER_ID } from "@/lib/auth/demo-user";
 
@@ -14,15 +15,20 @@ export function isDemoAuthEnabled() {
 
 /**
  * Supabase session OR httpOnly demo cookie (only accepts the known demo user id).
+ * Demo path never calls Supabase — avoids crashes when Supabase env is unset (demo-only deploys).
  */
 export async function getAppUserId(): Promise<string | null> {
   if (isDemoAuthEnabled()) {
     const cookieStore = await cookies();
     const raw = cookieStore.get(DEMO_COOKIE_NAME)?.value;
     if (raw === DEMO_USER_ID) {
-      const user = await prisma.user.findUnique({ where: { id: DEMO_USER_ID } });
-      if (user) return user.id;
+      const user = await ensureDemoUserInDb();
+      return user.id;
     }
+  }
+
+  if (!isSupabaseConfigured()) {
+    return null;
   }
 
   const supabase = await createServerClientSupabase();
