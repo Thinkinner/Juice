@@ -25,7 +25,8 @@ Production-style **Instagram professional account** analytics app: ingest insigh
 ```bash
 npm install
 cp .env.example .env.local
-# Fill DATABASE_URL, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
+# Fill POSTGRES_PRISMA_URL (Prisma pooler URI from Supabase → Database), plus NEXT_PUBLIC_* keys.
+# **Vercel + Supabase integration:** sets `POSTGRES_PRISMA_URL`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY` — redeploy after connecting.
 npx prisma generate
 npx prisma db push
 npm run dev
@@ -63,9 +64,9 @@ Open [http://localhost:3000](http://localhost:3000).
 
 See **`.env.example`**. Required for full functionality:
 
-- `DATABASE_URL` — Postgres (Supabase)
-- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — anon key
+- `POSTGRES_PRISMA_URL` — Prisma/pooled Postgres URI (**Vercel Supabase integration adds this**)
+- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL (integration adds this)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — anon public key (integration adds this)
 
 Optional:
 
@@ -73,13 +74,15 @@ Optional:
 - `SEED_USER_EMAIL` / `SEED_EMAIL` — seed target user
 - `OPENAI_API_KEY` — future grounded LLM layer (not required)
 
+If you only have `DATABASE_URL` from older docs, set `POSTGRES_PRISMA_URL` to the **same connection string** (Prisma reads `POSTGRES_PRISMA_URL` in this repo).
+
 ## Deploy (Vercel)
 
 1. Import repo; set **Root Directory** to project root (where `package.json` lives).
 2. **Node.js**: set **20.x** (Project → Settings → General) — matches `engines` and `.nvmrc`.
-3. Add env vars from `.env.example` (at minimum `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` for a green build with dynamic routes).
+3. **Supabase integration** should add `POSTGRES_PRISMA_URL`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. If `POSTGRES_PRISMA_URL` is missing, add it from Supabase → Database → Prisma connection string.
 4. Build runs `prisma generate && next build` so the Prisma client always exists on the server.
-5. **Prisma**: run `npx prisma db push` against production DB before first deploy (or from CI).
+5. **Prisma**: run `npx prisma db push` against production DB before first deploy (or from CI), with `POSTGRES_PRISMA_URL` in your local `.env.local`.
 6. Optional: Vercel Cron → `POST /api/cron/sync` with `Authorization: Bearer CRON_SECRET`.
 
 If the build failed with exit code 1, check the **Build** log (not only Runtime). Common fixes: wrong Node version, missing env for Supabase public keys, or Root Directory pointing at an empty folder.

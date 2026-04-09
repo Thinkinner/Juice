@@ -7,7 +7,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Vercel + Supabase integration sets POSTGRES_PRISMA_URL (pooled, Prisma-friendly).
+  // Locally, paste the same "Prisma" URI from Supabase → Database, or set DATABASE_URL and duplicate below.
+  url      = env("POSTGRES_PRISMA_URL")
 }
 
 enum Platform {
