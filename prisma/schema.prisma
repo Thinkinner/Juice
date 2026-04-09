@@ -2,7 +2,9 @@
 // Auth users live in Supabase Auth; `User.id` MUST match `auth.users.id`.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Vercel (Linux) + local dev: include both engines so `prisma generate` on CI matches runtime.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {

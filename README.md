@@ -85,7 +85,14 @@ If you only have `DATABASE_URL` from older docs, set `POSTGRES_PRISMA_URL` to th
 5. **Prisma**: run `npx prisma db push` against production DB before first deploy (or from CI), with `POSTGRES_PRISMA_URL` in your local `.env.local`.
 6. Optional: Vercel Cron → `POST /api/cron/sync` with `Authorization: Bearer CRON_SECRET`.
 
-If the build failed with exit code 1, check the **Build** log (not only Runtime). Common fixes: wrong Node version, missing env for Supabase public keys, or Root Directory pointing at an empty folder.
+If **`npm run build`** fails on Vercel, open the deployment → **Building** tab and scroll to the **first red error** (not just “exited with 1”). Common fixes:
+
+1. **Node 20** — Vercel → Settings → General → Node.js **20.x**.
+2. **Env vars** — `POSTGRES_PRISMA_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` on **Production** (and Preview if you use it).
+3. **Root Directory** — empty if `package.json` is at repo root.
+4. **Prisma on Linux** — this repo sets `binaryTargets` for Vercel; run `npx prisma generate` after pulling.
+
+Paste the **last 30 lines** of the Build log here if it still fails.
 
 ## Live Instagram (Meta) — not wired by default
 
