@@ -1,6 +1,6 @@
 /**
- * Seed mock Instagram performance data.
- * Requires an existing User (sign up once at /signup), or set SEED_USER_EMAIL to match.
+ * Seed mock Instagram performance data (100 posts) + recommendation run.
+ * User resolution: SEED_USER_EMAIL → first DB user → built-in demo user.
  */
 import {
   ClassifierSource,
@@ -10,8 +10,12 @@ import {
   SyncStatus,
 } from "@prisma/client";
 import { createHash } from "crypto";
+import { DEMO_USER_EMAIL, DEMO_USER_ID } from "../src/lib/auth/demo-user";
+import { runRecommendationEngine } from "../src/services/recommendation/recommendation.service";
 
 const prisma = new PrismaClient();
+
+const TARGET_POSTS = 100;
 
 const TOPICS = [
   "finance",
@@ -58,18 +62,29 @@ function pick<T>(arr: T[], seed: number): T {
   return arr[Math.floor(rnd(seed) * arr.length)]!;
 }
 
-export async function main() {
+async function resolveSeedUser() {
   const email = process.env.SEED_USER_EMAIL || process.env.SEED_EMAIL;
-  const user = email
-    ? await prisma.user.findUnique({ where: { email } })
-    : await prisma.user.findFirst({ orderBy: { createdAt: "asc" } });
-
-  if (!user) {
-    console.warn(
-      "[seed] No User found. Sign up at /signup first, then:\n  SEED_USER_EMAIL=you@mail.com npx prisma db seed",
-    );
-    process.exit(0);
+  if (email) {
+    const u = await prisma.user.findUnique({ where: { email } });
+    if (u) return u;
   }
+  const first = await prisma.user.findFirst({ orderBy: { createdAt: "asc" } });
+  if (first) return first;
+
+  return prisma.user.upsert({
+    where: { id: DEMO_USER_ID },
+    create: {
+      id: DEMO_USER_ID,
+      email: DEMO_USER_EMAIL,
+      name: "Demo creator",
+    },
+    update: { email: DEMO_USER_EMAIL },
+  });
+}
+
+export async function main() {
+  const user = await resolveSeedUser();
+  console.log("[seed] Using user", user.email, user.id);
 
   const slug = `demo-${user.id.slice(0, 8)}`;
   const workspace =
@@ -113,14 +128,16 @@ export async function main() {
     }));
 
   const existing = await prisma.mediaPost.count({ where: { socialAccountId: account.id } });
-  if (existing >= 100) {
-    console.log(`[seed] Already ${existing} posts — skipping bulk insert.`);
-    return;
+  const need = Math.max(0, TARGET_POSTS - existing);
+
+  if (need === 0) {
+    console.log(`[seed] Already ${existing} posts — skipping insert.`);
   }
 
   const now = Date.now();
 
-  for (let i = 0; i < 120; i++) {
+  for (let j = 0; j < need; j++) {
+    const i = existing + j;
     const seed = i * 9973;
     const daysAgo = Math.floor(rnd(seed) * 120);
     const publishedAt = new Date(now - daysAgo * 86400000 - Math.floor(rnd(seed + 1) * 3600000));
@@ -189,13 +206,13 @@ export async function main() {
       },
     });
 
-    if (i % 30 === 0) {
+    if (j % 25 === 0 && j > 0) {
       await prisma.syncLog.create({
         data: {
           socialAccountId: account.id,
           status: SyncStatus.SUCCESS,
-          message: `Batch seed checkpoint ${i}`,
-          postsSynced: i + 1,
+          message: `Batch seed checkpoint ${j}`,
+          postsSynced: j,
           finishedAt: new Date(),
         },
       });
@@ -207,7 +224,12 @@ export async function main() {
     data: { lastSyncedAt: new Date() },
   });
 
-  console.log("[seed] Created 120 mock posts + insights + classifications for workspace", workspace.slug);
+  if (need > 0) {
+    console.log(`[seed] Inserted ${need} posts (total target ${TARGET_POSTS}) for workspace`, workspace.slug);
+  }
+
+  await runRecommendationEngine(workspace.id);
+  console.log("[seed] Recommendation engine completed for workspace", workspace.slug);
 }
 
 main()

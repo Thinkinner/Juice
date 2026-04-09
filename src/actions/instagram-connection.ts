@@ -4,17 +4,12 @@ import { Platform } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { ensureWorkspace } from "@/services/analytics/analytics.service";
-import { createServerClientSupabase } from "@/lib/supabase/server";
+import { requireUserId } from "@/lib/auth/session";
 
 /** Creates a mock Instagram professional account row for demos (no Meta token). */
 export async function connectMockInstagramAction() {
-  const supabase = await createServerClientSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) throw new Error("Unauthorized");
-
-  const ws = await ensureWorkspace(user.id);
+  const userId = await requireUserId();
+  const ws = await ensureWorkspace(userId);
 
   const existing = await prisma.socialAccount.findFirst({
     where: { workspaceId: ws.id, platform: Platform.INSTAGRAM },
@@ -27,7 +22,7 @@ export async function connectMockInstagramAction() {
     data: {
       workspaceId: ws.id,
       platform: Platform.INSTAGRAM,
-      externalUserId: `mock_${user.id.slice(0, 8)}`,
+      externalUserId: `mock_${userId.slice(0, 8)}`,
       username: "your_brand (mock)",
       displayName: "Mock IG Professional",
       isMock: true,

@@ -1,7 +1,9 @@
 "use server";
 
+import { DEMO_COOKIE_NAME } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { createServerClientSupabase } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -51,10 +53,12 @@ export async function signInAction(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect("/dashboard/overview");
 }
 
 export async function signOutAction() {
+  const cookieStore = await cookies();
+  cookieStore.delete(DEMO_COOKIE_NAME);
   const supabase = await createServerClientSupabase();
   await supabase.auth.signOut();
   revalidatePath("/", "layout");

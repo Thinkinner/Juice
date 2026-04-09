@@ -4,20 +4,16 @@ export const dynamic = "force-dynamic";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { Button } from "@/components/ui/button";
 import { signOutAction } from "@/actions/auth";
-import { createServerClientSupabase } from "@/lib/supabase/server";
+import { getAppUserId } from "@/lib/auth/session";
 import { ensureWorkspace } from "@/services/analytics/analytics.service";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createServerClientSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user?.email) {
+  const userId = await getAppUserId();
+  if (!userId) {
     redirect("/login");
   }
 
-  await ensureWorkspace(user.id);
+  await ensureWorkspace(userId);
 
   return (
     <div className="flex min-h-screen flex-1">

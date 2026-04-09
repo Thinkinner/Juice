@@ -1,17 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarListChart } from "@/components/charts/bar-list-chart";
-import { createServerClientSupabase } from "@/lib/supabase/server";
 import { aggregatePatterns } from "@/services/analytics/analytics.service";
-import { ensureWorkspace } from "@/services/analytics/analytics.service";
+import { getDashboardWorkspace } from "@/lib/auth/session";
 
 export default async function PatternsPage() {
-  const supabase = await createServerClientSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) return null;
-
-  const ws = await ensureWorkspace(user.id);
+  const ws = await getDashboardWorkspace();
+  if (!ws) return null;
   const p = await aggregatePatterns(ws.id);
 
   return (

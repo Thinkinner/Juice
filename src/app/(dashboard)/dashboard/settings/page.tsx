@@ -7,17 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_METRIC_WEIGHTS } from "@/lib/constants/metrics";
-import { createServerClientSupabase } from "@/lib/supabase/server";
-import { ensureWorkspace } from "@/services/analytics/analytics.service";
+import { getDashboardWorkspace } from "@/lib/auth/session";
 
 export default async function SettingsPage() {
-  const supabase = await createServerClientSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) return null;
-
-  const ws = await ensureWorkspace(user.id);
+  const ws = await getDashboardWorkspace();
+  if (!ws) return null;
   const settings = await prisma.workspaceSettings.findUnique({
     where: { workspaceId: ws.id },
   });

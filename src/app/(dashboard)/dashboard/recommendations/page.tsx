@@ -3,18 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/prisma";
-import { createServerClientSupabase } from "@/lib/supabase/server";
-import { ensureWorkspace } from "@/services/analytics/analytics.service";
+import { getDashboardWorkspace } from "@/lib/auth/session";
 import { CopyPackButton } from "@/components/dashboard/copy-pack-button";
 
-export default async function NextPostsPage() {
-  const supabase = await createServerClientSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) return null;
-
-  const ws = await ensureWorkspace(user.id);
+export default async function RecommendationsPage() {
+  const ws = await getDashboardWorkspace();
+  if (!ws) return null;
 
   const lastRun = await prisma.recommendationRun.findFirst({
     where: { workspaceId: ws.id },
@@ -28,7 +22,8 @@ export default async function NextPostsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">What to post next</h1>
           <p className="text-sm text-muted-foreground">
-            Ranked ideas from your winning clusters + recency. Run after sync/seed.
+            Ranked ideas from winning clusters vs your baseline. Regenerate after changing weights or
+            adding posts.
           </p>
         </div>
         <form action={runRecommendationsAction}>
@@ -39,7 +34,8 @@ export default async function NextPostsPage() {
       {!lastRun?.recommendations.length && (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            No recommendations yet — click regenerate (requires posts in DB).
+            No recommendations yet — seed the database and click regenerate, or open Settings → sync mock
+            data.
           </CardContent>
         </Card>
       )}

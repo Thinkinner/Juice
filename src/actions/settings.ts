@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { ensureWorkspace } from "@/services/analytics/analytics.service";
-import { createServerClientSupabase } from "@/lib/supabase/server";
+import { requireUserId } from "@/lib/auth/session";
 
 const weightsSchema = z.object({
   views: z.number().min(0).max(1),
@@ -16,13 +16,8 @@ const weightsSchema = z.object({
 });
 
 export async function updateMetricWeightsAction(formData: FormData) {
-  const supabase = await createServerClientSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) throw new Error("Unauthorized");
-
-  const ws = await ensureWorkspace(user.id);
+  const userId = await requireUserId();
+  const ws = await ensureWorkspace(userId);
   const raw = {
     views: Number(formData.get("views")),
     shareSave: Number(formData.get("shareSave")),
@@ -55,13 +50,8 @@ export async function updateMetricWeightsAction(formData: FormData) {
 }
 
 export async function updateFlagsAction(formData: FormData) {
-  const supabase = await createServerClientSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) throw new Error("Unauthorized");
-
-  const ws = await ensureWorkspace(user.id);
+  const userId = await requireUserId();
+  const ws = await ensureWorkspace(userId);
   const mockMode = formData.has("mockMode");
   const aiClassifier = formData.has("aiClassifier");
 

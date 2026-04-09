@@ -1,17 +1,12 @@
 "use server";
 
 import { ensureWorkspace, loadPostsWithScores } from "@/services/analytics/analytics.service";
-import { createServerClientSupabase } from "@/lib/supabase/server";
+import { requireUserId } from "@/lib/auth/session";
 
 /** Generates copy prompts grounded in top-performing clusters (no external LLM required). */
 export async function generateCopyPackAction(topic: string, format: string) {
-  const supabase = await createServerClientSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) throw new Error("Unauthorized");
-
-  const ws = await ensureWorkspace(user.id);
+  const userId = await requireUserId();
+  const ws = await ensureWorkspace(userId);
   const { posts } = await loadPostsWithScores(ws.id);
   const top = [...posts].sort((a, b) => b.composite - a.composite).slice(0, 5);
 

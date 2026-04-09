@@ -136,6 +136,7 @@ function summarize(map: Map<string, { composite: number }[]>) {
 export type OverviewStats = {
   lastSync: Date | null;
   totalPosts: number;
+  avgComposite: number;
   topWinners: { id: string; caption: string; composite: number }[];
   bottomLosers: { id: string; caption: string; composite: number }[];
   trend: { date: string; avgScore: number }[];
@@ -172,9 +173,13 @@ export async function getOverview(workspaceId: string): Promise<OverviewStats> {
       avgScore: vals.reduce((a, b) => a + b, 0) / vals.length,
     }));
 
+  const avgComposite =
+    posts.length > 0 ? posts.reduce((s, p) => s + p.composite, 0) / posts.length : 0;
+
   return {
     lastSync: account?.lastSyncedAt ?? null,
     totalPosts: posts.length,
+    avgComposite,
     topWinners: top,
     bottomLosers: bottom,
     trend,

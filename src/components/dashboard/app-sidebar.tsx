@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
 const links = [
-  { href: "/dashboard", label: "Overview", icon: Home },
-  { href: "/dashboard/content", label: "Content intelligence", icon: Table2 },
+  { href: "/dashboard/overview", label: "Overview", icon: Home },
+  { href: "/dashboard/content-intelligence", label: "Content intelligence", icon: Table2 },
   { href: "/dashboard/patterns", label: "Patterns", icon: LineChart },
-  { href: "/dashboard/next", label: "What to post next", icon: Sparkles },
+  { href: "/dashboard/recommendations", label: "What to post next", icon: Sparkles },
   { href: "/dashboard/strategist", label: "AI strategist", icon: Brain },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
@@ -29,7 +29,7 @@ export function AppSidebar() {
       </div>
       <nav className="flex flex-1 flex-col gap-1 p-2">
         {links.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href;
+          const active = pathname === href || (href !== "/dashboard/overview" && pathname.startsWith(href));
           return (
             <Link
               key={href}

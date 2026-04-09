@@ -2,15 +2,10 @@
 
 import { strategistAnswer } from "@/services/ai/ai-strategist.service";
 import { ensureWorkspace } from "@/services/analytics/analytics.service";
-import { createServerClientSupabase } from "@/lib/supabase/server";
+import { requireUserId } from "@/lib/auth/session";
 
 export async function askStrategistAction(question: string) {
-  const supabase = await createServerClientSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user?.email) throw new Error("Unauthorized");
-
-  const ws = await ensureWorkspace(user.id);
+  const userId = await requireUserId();
+  const ws = await ensureWorkspace(userId);
   return strategistAnswer(ws.id, question);
 }
