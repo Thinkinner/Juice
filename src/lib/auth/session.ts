@@ -30,7 +30,7 @@ export async function getAppUserId(): Promise<string | null> {
         redirect(
           "/login?error=" +
             encodeURIComponent(
-              "Database unreachable — set POSTGRES_PRISMA_URL on Vercel, redeploy, then npx prisma db push",
+              "Use Supabase POOLER URI (port 6543, host has pooler)—not direct db:5432. Update POSTGRES_PRISMA_URL on Vercel, redeploy.",
             ),
         );
       }

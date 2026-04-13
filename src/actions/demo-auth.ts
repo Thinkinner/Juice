@@ -21,7 +21,7 @@ export async function enterDemoModeAction() {
     redirect(
       "/login?error=" +
         encodeURIComponent(
-          "Database unreachable. On Vercel set POSTGRES_PRISMA_URL (Supabase pooler), redeploy, then run: npx prisma db push",
+          "Use Supabase POOLER URI (6543, host contains pooler)—not direct :5432. Set POSTGRES_PRISMA_URL on Vercel, redeploy.",
         ),
     );
   }

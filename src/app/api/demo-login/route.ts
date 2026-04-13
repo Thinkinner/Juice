@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       new URL(
         "/login?error=" +
           encodeURIComponent(
-            "Database unreachable — check POSTGRES_PRISMA_URL on Vercel, redeploy, then npx prisma db push",
+            "DB unreachable from Vercel. In Supabase use the SESSION POOLER / Transaction string (host has pooler, port 6543)—NOT direct db....supabase.co:5432. Put that full postgresql:// URI in Vercel as POSTGRES_PRISMA_URL, save, redeploy. Then run prisma db push locally.",
           ),
         request.url,
       ),
