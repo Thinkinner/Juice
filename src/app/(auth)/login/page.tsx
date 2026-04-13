@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { enterDemoModeAction } from "@/actions/demo-auth";
 import { signInAction } from "@/actions/auth";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,14 +35,17 @@ export default async function LoginPage({
           )}
 
           {demo && (
-            <form action={enterDemoModeAction} className="space-y-2">
-              <Button type="submit" className="w-full" variant="secondary">
+            <div className="space-y-2">
+              <Link
+                href="/api/demo-login"
+                className={cn(buttonVariants({ variant: "secondary" }), "flex w-full")}
+              >
                 Open demo app (mock data)
-              </Button>
+              </Link>
               <p className="text-center text-xs text-muted-foreground">
                 Full dashboard with seeded posts — no password.
               </p>
-            </form>
+            </div>
           )}
 
           <div className="relative">

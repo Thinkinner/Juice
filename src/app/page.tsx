@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { enterDemoModeAction } from "@/actions/demo-auth";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { BarChart3 } from "lucide-react";
@@ -17,11 +16,9 @@ export default function HomePage() {
             <Link href="/login" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
               Sign in
             </Link>
-            <form action={enterDemoModeAction}>
-              <button type="submit" className={cn(buttonVariants({ size: "sm" }))}>
-                Open demo app
-              </button>
-            </form>
+            <Link href="/api/demo-login" className={cn(buttonVariants({ size: "sm" }))}>
+              Open demo app
+            </Link>
           </div>
         </div>
       </header>
@@ -35,11 +32,9 @@ export default function HomePage() {
           demo to explore the full product.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
-          <form action={enterDemoModeAction}>
-            <button type="submit" className={cn(buttonVariants({ size: "lg" }))}>
-              Enter demo workspace
-            </button>
-          </form>
+          <Link href="/api/demo-login" className={cn(buttonVariants({ size: "lg" }))}>
+            Enter demo workspace
+          </Link>
           <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
             Sign in with email
           </Link>
