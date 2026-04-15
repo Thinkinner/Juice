@@ -19,8 +19,10 @@ export default async function LoginPage({
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md border-border">
         <CardHeader>
-          <CardTitle>Welcome back</CardTitle>
-          <CardDescription>Sign in with email, or use the demo workspace (no account).</CardDescription>
+          <CardTitle>Team sign-in</CardTitle>
+          <CardDescription>
+            Email access for collaborators. New users: start from the home page with an Instagram handle.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {q.error && (
@@ -71,9 +73,8 @@ export default async function LoginPage({
             </Button>
           </form>
           <p className="text-center text-sm text-muted-foreground">
-            No account?{" "}
-            <Link href="/signup" className="text-primary underline-offset-4 hover:underline">
-              Sign up
+            <Link href="/" className="text-primary underline-offset-4 hover:underline">
+              ← Analyze a handle (demo)
             </Link>
           </p>
         </CardContent>

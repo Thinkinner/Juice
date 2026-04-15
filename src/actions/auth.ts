@@ -12,16 +12,16 @@ export async function signUpAction(formData: FormData) {
   const password = String(formData.get("password") || "");
   const name = String(formData.get("name") || "").trim();
   if (!email || !password) {
-    redirect("/signup?error=" + encodeURIComponent("Email and password required"));
+    redirect("/login?error=" + encodeURIComponent("Email and password required"));
   }
 
   if (!isSupabaseConfigured()) {
-    redirect("/signup?error=" + encodeURIComponent("Supabase is not configured — use Open demo on the home page."));
+    redirect("/login?error=" + encodeURIComponent("Supabase is not configured — use the home page demo."));
   }
 
   const supabase = await createServerClientSupabase();
   const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) redirect("/signup?error=" + encodeURIComponent(error.message));
+  if (error) redirect("/login?error=" + encodeURIComponent(error.message));
 
   const userId = data.user?.id;
   if (userId) {

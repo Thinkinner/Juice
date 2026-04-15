@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
         destination: "/dashboard/recommendations",
         permanent: true,
       },
+      {
+        source: "/signup",
+        destination: "/",
+        permanent: false,
+      },
     ];
   },
 };
